@@ -22,9 +22,7 @@ import util.IOUtils;
 
 public class RequestHandler extends Thread {
 	private static final Logger log = LoggerFactory.getLogger(RequestHandler.class);
-
 	private Socket connection;
-
 	public RequestHandler(Socket connectionSocket) {
 		this.connection = connectionSocket;
 	}
@@ -73,41 +71,46 @@ public class RequestHandler extends Thread {
 				User user = new User(params.get("userId"), params.get("password"), params.get("name"),
 						params.get("email"));
 				log.debug("User:{}", user);
-				
+
 				DataBase.addUser(user);
-				
+
 				DataOutputStream dos = new DataOutputStream(out);
 				response302Header(dos);
 
-			} 
-			else if (url.startsWith("/user/login") ==true && headers.get("Content-Length")!=null) {
+			} else if (url.startsWith("/user/login") == true && headers.get("Content-Length") != null) {
 				String requestBody = IOUtils.readData(br, Integer.parseInt(headers.get("Content-Length")));
 				log.debug("Request Body :{}", requestBody);
 
 				Map<String, String> params = HttpRequestUtils.parseQueryString(requestBody);
-				
+
 				log.debug("Userid:{} , Pasword: {}", params.get("userId"), params.get("password"));
-				
+
 				User user = DataBase.findUserById(params.get("userId"));
-				
-				if(user==null){
+
+				if (user == null) {
 					log.debug(" User Not Found!!");
 					DataOutputStream dos = new DataOutputStream(out);
 					response302Header(dos);
-				}else if(user.getPassword().equals(params.get("password"))){
+				} else if (user.getPassword().equals(params.get("password"))) {
 					log.debug(" Log in Success!!");
 					DataOutputStream dos = new DataOutputStream(out);
+					// 쿠기 유지 쿠키 값은 logine=true 이다.
 					response302HeaderWithCookie(dos, "logined=true");
-				}else{
+				} else {
 					log.debug(" PassWord missmatch!");
 					DataOutputStream dos = new DataOutputStream(out);
 					response302Header(dos);
 				}
-				
-				
 
-			} 
-			else {
+			} else if (url.endsWith(".css")) {
+				DataOutputStream dos = new DataOutputStream(out);
+				// byte[] body = "Hello World tests!!!!!".getBytes();
+				byte[] body = Files.readAllBytes(new File("./webapp" + url).toPath());
+
+				response200HeaderWithCss(dos, body.length);
+				responseBody(dos, body);
+
+			} else {
 				DataOutputStream dos = new DataOutputStream(out);
 				// byte[] body = "Hello World tests!!!!!".getBytes();
 				byte[] body = Files.readAllBytes(new File("./webapp" + url).toPath());
@@ -146,23 +149,34 @@ public class RequestHandler extends Thread {
 			log.error(e.getMessage());
 		}
 	}
-	//쿠키 유지 
-	private void response302HeaderWithCookie(DataOutputStream dos , String cookie) {
+
+	// 쿠키 유지
+	private void response302HeaderWithCookie(DataOutputStream dos, String cookie) {
 		try {
 			dos.writeBytes("HTTP/1.1 302 Found \r\n");
 			dos.writeBytes("Location: /index.html\r\n");
-			dos.writeBytes("Set-Cookie: "+cookie+"\r\n");
+			dos.writeBytes("Set-Cookie: " + cookie + "\r\n");
 			dos.writeBytes("\r\n");
 		} catch (IOException e) {
 			log.error(e.getMessage());
 		}
 	}
-		
 
 	private void response200Header(DataOutputStream dos, int lengthOfBodyContent) {
 		try {
 			dos.writeBytes("HTTP/1.1 200 OK \r\n");
 			dos.writeBytes("Content-Type: text/html;charset=utf-8\r\n");
+			dos.writeBytes("Content-Length: " + lengthOfBodyContent + "\r\n");
+			dos.writeBytes("\r\n");
+		} catch (IOException e) {
+			log.error(e.getMessage());
+		}
+	}
+
+	private void response200HeaderWithCss(DataOutputStream dos, int lengthOfBodyContent) {
+		try {
+			dos.writeBytes("HTTP/1.1 200 OK \r\n");
+			dos.writeBytes("Content-Type: text/css;charset=utf-8\r\n");
 			dos.writeBytes("Content-Length: " + lengthOfBodyContent + "\r\n");
 			dos.writeBytes("\r\n");
 		} catch (IOException e) {
