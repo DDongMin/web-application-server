@@ -16,12 +16,21 @@ public class HttpRequestUtils {
 	
 	private static final Logger log = LoggerFactory.getLogger(HttpRequestUtils.class);
 	
-	public static String getUrl(String firstLine){
+	public static String getUrl(String firstLine , String FLAG){
 		
 		String[] tokens = firstLine.split(" ");
-    	String url = tokens[1];
-    	log.debug(" request path :{}",url);
-		
+		String url;
+		if(FLAG.equals("method")){
+			url = tokens[0];
+			log.debug(" request method :{}",url);
+		}else if(FLAG.equals("path")){
+
+	    	url = tokens[1];
+	    	log.debug(" request path :{}",url);
+		}
+		else{
+			url = null;
+		}
 		return url;
 	}
     /**
